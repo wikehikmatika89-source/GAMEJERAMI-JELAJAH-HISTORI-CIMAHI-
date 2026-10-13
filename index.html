@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GAME JERAMI - Jelajah Histori Cimahi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #0f172a;
+            touch-action: manipulation;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, .font-heading {
+            font-family: 'Fredoka', cursive;
+        }
+
+        .map-board {
+            background: radial-gradient(circle at center, #0284c7 0%, #0f172a 85%);
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 60px rgba(0,0,0,0.6);
+        }
+
+        .map-island {
+            background: #f59e0b;
+            border: 4px solid #b45309;
+            box-shadow: 0 8px 0 #78350f, inset 0 0 15px rgba(251, 191, 36, 0.6);
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+        }
+
+        .map-node {
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .map-node:hover {
+            transform: scale(1.15) translateY(-4px);
+        }
+
+        .map-node.active-node {
+            animation: pulse-danger-node 1.2s infinite alternate;
+        }
+
+        @keyframes pulse-danger-node {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8); }
+            100% { transform: scale(1.18); box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
+        }
+
+        .alya-character {
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 8px 6px rgba(0,0,0,0.5));
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(16px);
+            border: 4px solid #f59e0b;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+
+        @keyframes float-note {
+            0% { transform: translateY(0px) rotate(0deg) scale(1); opacity: 1; }
+            50% { transform: translateY(-10px) rotate(20deg) scale(1.2); opacity: 0.9; }
+            100% { transform: translateY(0px) rotate(0deg) scale(1); opacity: 1; }
+        }
+
+        .note-anim {
+            animation: float-note 0.8s infinite ease-in-out;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        .marquee-content {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee 18s linear infinite;
+        }
+
+        .timer-warning-glow {
+            animation: timer-glow 0.5s infinite alternate;
+        }
+
+        @keyframes timer-glow {
+            0% { background-color: rgba(239, 68, 68, 0.2); border-color: #ef4444; }
+            100% { background-color: rgba(239, 68, 68, 0.7); border-color: #f87171; color: white; }
+        }
+
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #f59e0b;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex flex-col justify-between">
+
+    <!-- Header & Intense Audio Control Bar -->
+    <header class="bg-gradient-to-r from-red-700 via-amber-600 to-red-800 border-b-4 border-amber-400 px-3 sm:px-4 py-2.5 shadow-2xl z-30 sticky top-0">
+        <div class="max-w-6xl mx-auto flex flex-col gap-2">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <div class="bg-amber-300 p-1.5 sm:p-2 rounded-2xl border-2 border-amber-900 shadow-inner">
+                        <i class="fa-solid fa-fire-flame-curved text-red-700 text-xl sm:text-2xl animate-bounce"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg sm:text-2xl font-black text-amber-100 leading-tight tracking-wider">GAME JERAMI</h1>
+                        <p class="text-[10px] sm:text-xs font-bold text-amber-200">Tantangan Jelajah Histori Cimahi (Kelas VII)</p>
+                    </div>
+                </div>
+
+                <div id="game-status-bar" class="hidden flex items-center space-x-2 sm:space-x-3">
+                    <div class="bg-slate-900/90 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl border-2 border-amber-400 flex items-center space-x-1.5 text-xs font-bold shadow">
+                        <i class="fa-solid fa-user-ninja text-amber-400"></i>
+                        <span id="player-display-name" class="truncate max-w-[80px] sm:max-w-[120px] text-amber-200">Alya</span>
+                    </div>
+                    <div class="bg-emerald-950 border-2 border-emerald-400 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl flex items-center space-x-1.5 shadow">
+                        <i class="fa-solid fa-bolt text-amber-400 text-xs sm:text-sm"></i>
+                        <span id="score-display" class="font-black text-emerald-300 text-sm sm:text-lg">0</span>
+                        <span class="text-[10px] text-emerald-500 font-extrabold">/240</span>
+                    </div>
+                    <button id="bgm-toggle-btn" onclick="toggleBGM()" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1.5 rounded-xl border-2 border-amber-300 shadow active:translate-y-0.5 transition-all flex items-center space-x-1">
+                        <i id="bgm-icon" class="fa-solid fa-volume-high text-xs sm:text-sm"></i>
+                        <span id="bgm-status-text" class="text-[10px] sm:text-xs font-black hidden sm:inline">145 BPM BATTLE</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Intense Marquee Song Bar -->
+            <div id="song-banner" class="bg-slate-950/90 text-amber-300 border border-amber-500/50 rounded-xl px-3 py-1 text-xs overflow-hidden flex items-center space-x-2">
+                <i id="bgm-note-indicator" class="fa-solid fa-drum text-red-500 note-anim text-xs flex-shrink-0"></i>
+                <div class="overflow-hidden w-full relative">
+                    <div id="karaoke-text" class="marquee-content font-extrabold text-[11px] text-amber-200">
+                        ⚔️ NYANYIAN PAHLAWAN JERAMI (145 BPM): "Dengarlah deru langkah Alya di Stasiun Cimahi ~ Menerjang rintangan RS Dustira ~ Menembus benteng tebal Poncol & The Historich ~ Bersatu di Cirendeu menaklukkan Gunung Bohong!" ⚔️
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-2 sm:p-4">
+        
+        <!-- Registration Form -->
+        <section id="login-section" class="w-full max-w-md my-auto z-10">
+            <div class="glass-card rounded-3xl p-5 sm:p-8 text-center relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-red-600/30 rounded-full blur-xl"></div>
+                
+                <div class="inline-block bg-amber-400 p-4 rounded-full border-4 border-amber-600 mb-3 shadow-lg animate-pulse">
+                    <i class="fa-solid fa-swords text-3xl sm:text-4xl text-slate-950"></i>
+                </div>
+
+                <h2 class="text-2xl sm:text-3xl font-black text-amber-400 mb-1 tracking-wide">Mulai Misi Alya!</h2>
+                <p class="text-slate-300 text-xs sm:text-sm mb-5 font-semibold">Siapkan dirimu menjawab 60 Soal Tantangan Menang & Kalahkan Rintangan Sejarah Cimahi!</p>
+
+                <form id="identity-form" onsubmit="submitStudentIdentity(event)" class="space-y-3.5 text-left">
+                    <div>
+                        <label class="block text-xs font-bold text-amber-300 uppercase mb-1">Nama Pejuang / Siswa</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-user-shield absolute left-3 top-3.5 text-amber-500"></i>
+                            <input type="text" id="input-nama" required placeholder="Contoh: Alya Rohali" 
+                                class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-amber-500/50 bg-slate-900 text-amber-100 focus:border-amber-400 focus:outline-none font-semibold text-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-amber-300 uppercase mb-1">Kelas (Khusus VII)</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-graduation-cap absolute left-3 top-3.5 text-amber-500"></i>
+                                <select id="input-kelas" required class="w-full pl-10 pr-2 py-2.5 rounded-xl border-2 border-amber-500/50 bg-slate-900 text-amber-100 focus:border-amber-400 focus:outline-none font-semibold text-sm">
+                                    <option value="VII-A">VII-A</option>
+                                    <option value="VII-B">VII-B</option>
+                                    <option value="VII-C">VII-C</option>
+                                    <option value="VII-D">VII-D</option>
+                                    <option value="VII-E">VII-E</option>
+                                    <option value="VII-F">VII-F</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-amber-300 uppercase mb-1">No. Absen</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-list-ol absolute left-3 top-3.5 text-amber-500"></i>
+                                <input type="number" id="input-absen" min="1" max="50" required placeholder="1-50" 
+                                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-amber-500/50 bg-slate-900 text-amber-100 focus:border-amber-400 focus:outline-none font-semibold text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 text-slate-950 font-black text-base sm:text-lg py-3.5 rounded-2xl border-b-4 border-red-900 shadow-xl transition-all active:translate-y-1 mt-3 flex items-center justify-center space-x-2">
+                        <span>MASUK MEDAN PERTANDINGAN</span>
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Interactive Map Section -->
+        <section id="map-section" class="hidden w-full max-w-5xl mx-auto flex flex-col items-center z-10">
+            <div class="w-full map-board rounded-3xl border-4 sm:border-8 border-amber-500/80 shadow-2xl p-3 sm:p-6 relative min-h-[500px] sm:min-h-[580px] flex flex-col justify-between overflow-hidden">
+                
+                <div class="map-island absolute top-8 left-4 sm:left-8 w-32 h-24 sm:w-48 sm:h-36 opacity-90 pointer-events-none flex items-center justify-center">
+                    <span class="text-amber-950/60 font-black text-[10px] sm:text-xs uppercase tracking-widest rotate-12">Lembah Cimahi</span>
+                </div>
+                <div class="map-island absolute bottom-12 right-6 w-36 h-28 sm:w-56 sm:h-40 opacity-80 pointer-events-none"></div>
+
+                <div class="relative z-10 mx-auto bg-slate-900/90 border-2 sm:border-4 border-amber-400 px-4 sm:px-6 py-1.5 sm:py-2 rounded-full shadow-2xl text-center">
+                    <h2 class="text-sm sm:text-2xl font-black text-amber-300 flex items-center space-x-2">
+                        <i class="fa-solid fa-map-location-dot text-red-500"></i>
+                        <span>PETA PETUALANGAN HISTORI CIMAHI</span>
+                    </h2>
+                </div>
+
+                <div id="map-canvas-area" class="relative z-20 my-auto py-8 min-h-[340px] flex items-center justify-center">
+                    <div id="map-nodes-container" class="w-full grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-2 relative z-30 justify-items-center items-center">
+                    </div>
+
+                    <div id="alya-avatar" class="alya-character absolute z-40 flex flex-col items-center pointer-events-none" style="transform: translate(-50%, -100%);">
+                        <div class="bg-red-600 text-amber-100 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 shadow flex items-center space-x-1 animate-bounce">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span>Alya</span>
+                        </div>
+                        <div class="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-tr from-amber-500 to-red-600 rounded-full border-2 sm:border-4 border-amber-300 shadow-2xl flex items-center justify-center text-slate-950 text-lg sm:text-2xl">
+                            <i class="fa-solid fa-user-ninja"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative z-10 flex flex-col sm:flex-row justify-between items-center bg-slate-900/95 backdrop-blur rounded-2xl p-2.5 sm:p-3 border-2 border-amber-500 text-xs font-bold text-amber-200 gap-2 shadow-xl">
+                    <div class="flex items-center space-x-2 flex-wrap justify-center sm:justify-start text-[11px] sm:text-xs">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                        <span>Selesai (10/10)</span>
+                        <span class="w-3 h-3 rounded-full bg-red-500 inline-block ml-2 animate-pulse"></span>
+                        <span>Pos Menantang</span>
+                        <span class="w-3 h-3 rounded-full bg-slate-600 inline-block ml-2"></span>
+                        <span>Terkunci</span>
+                    </div>
+                    <button onclick="triggerCurrentLocationModal()" class="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 text-slate-950 px-5 py-2.5 rounded-xl border-b-4 border-red-950 font-black shadow-lg active:translate-y-0.5 text-xs sm:text-sm">
+                        <i class="fa-solid fa-swords mr-1"></i> HADAPI TANTANGAN POS
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Location Narrative Modal -->
+        <div id="history-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3">
+            <div class="glass-card max-w-xl w-full rounded-3xl p-5 sm:p-7 relative overflow-hidden">
+                <div class="flex items-center space-x-3.5 mb-3 pb-3 border-b-2 border-amber-500/40">
+                    <div id="modal-icon-bg" class="p-2.5 sm:p-3 bg-red-950 text-amber-400 rounded-2xl border-2 border-amber-500 text-2xl">
+                        <i id="modal-loc-icon" class="fa-solid fa-landmark"></i>
+                    </div>
+                    <div>
+                        <span id="modal-level-badge" class="bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-black px-2.5 py-0.5 rounded-full uppercase">Pos 1 dari 6</span>
+                        <h3 id="modal-loc-title" class="text-lg sm:text-2xl font-black text-amber-300 leading-tight">Stasiun Cimahi</h3>
+                    </div>
+                </div>
+
+                <div class="space-y-3 text-slate-200 text-xs sm:text-sm leading-relaxed max-h-60 overflow-y-auto pr-1 custom-scroll">
+                    <div class="bg-slate-900/80 p-3.5 rounded-2xl border border-amber-500/30">
+                        <h4 class="font-black text-amber-400 mb-1 flex items-center text-xs sm:text-sm">
+                            <i class="fa-solid fa-book-journal-whills text-red-500 mr-2"></i>Sejarah Pos Perjuangan:
+                        </h4>
+                        <p id="modal-loc-history" class="text-justify text-slate-300 leading-relaxed text-xs sm:text-sm">
+                            Deskripsi sejarah...
+                        </p>
+                    </div>
+                    
+                    <div class="bg-red-950/60 p-3 rounded-xl border border-red-500 flex items-start space-x-2.5 text-amber-200">
+                        <i class="fa-solid fa-triangle-exclamation text-red-400 text-base mt-0.5"></i>
+                        <p id="modal-loc-mission" class="text-xs font-bold">
+                            Terdapat 10 soal tantangan literasi & numerasi fantasi menantang di pos ini!
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-5 flex justify-between items-center gap-2">
+                    <button onclick="closeHistoryModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3.5 py-2 rounded-xl text-xs sm:text-sm">
+                        Kembali
+                    </button>
+                    <button onclick="startQuizForCurrentLocation()" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-slate-950 font-black px-5 py-2.5 rounded-2xl border-b-4 border-emerald-950 shadow-lg active:translate-y-0.5 flex items-center space-x-1.5 text-xs sm:text-sm">
+                        <span>BERTARUNG (10 SOAL)</span>
+                        <i class="fa-solid fa-bolt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <section id="quiz-section" class="hidden w-full max-w-3xl mx-auto z-10">
+            <div class="glass-card rounded-3xl p-4 sm:p-7 relative">
+                
+                <div class="flex flex-wrap justify-between items-center gap-2 mb-3 pb-2 border-b-2 border-slate-800">
+                    <div class="flex items-center space-x-2">
+                        <span id="quiz-badge" class="bg-amber-400 text-slate-950 font-black text-[11px] sm:text-xs px-2.5 py-1 rounded-full">Pos 1 - Soal 1/10</span>
+                        <span id="quiz-type-badge" class="bg-red-950 text-red-300 border border-red-500 font-bold text-[11px] sm:text-xs px-2 py-1 rounded-full">Literasi Fantasi</span>
+                    </div>
+
+                    <div id="timer-box" class="flex items-center space-x-1.5 bg-red-950 border-2 border-red-500 px-3 py-1 rounded-xl transition-all">
+                        <i class="fa-solid fa-stopwatch text-red-400 animate-spin text-xs sm:text-sm"></i>
+                        <span id="timer-text" class="font-black text-red-300 text-base sm:text-lg">60</span>
+                        <span class="text-[10px] text-red-400 font-bold">DETIK</span>
+                    </div>
+                </div>
+
+                <!-- Fantasy Narrative Stem (MINIMAL 2 PARAGRAF) -->
+                <div class="bg-slate-950 text-slate-200 p-3.5 sm:p-5 rounded-2xl mb-4 shadow-inner text-xs sm:text-sm leading-relaxed relative border-l-4 border-red-500">
+                    <div id="quiz-narrative" class="italic space-y-3 max-h-56 sm:max-h-64 overflow-y-auto pr-1.5 custom-scroll text-amber-100/90">
+                        <!-- Two full paragraphs injected here -->
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h3 id="quiz-question" class="text-xs sm:text-base font-black text-amber-300 leading-snug">
+                        Pertanyaan kuis akan ditampilkan di sini?
+                    </h3>
+                </div>
+
+                <div id="answers-container" class="space-y-2.5 mb-5">
+                    <!-- Options / Inputs -->
+                </div>
+
+                <div id="explanation-box" class="hidden p-3.5 rounded-2xl mb-4 text-xs sm:text-sm font-semibold border-2">
+                    <div class="flex items-center space-x-2 mb-1">
+                        <i id="exp-icon" class="text-base sm:text-lg"></i>
+                        <span id="exp-title" class="font-extrabold text-xs sm:text-sm"></span>
+                    </div>
+                    <p id="exp-text" class="text-slate-200 leading-relaxed text-xs sm:text-sm"></p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <div class="text-[10px] sm:text-xs font-bold text-amber-400/80 italic">
+                        *1x Kesempatan Jawab | Benar = +4 Poin
+                    </div>
+                    <button id="next-btn" onclick="nextQuestion()" disabled class="w-full sm:w-auto bg-slate-800 text-slate-500 font-extrabold px-5 py-2.5 rounded-2xl cursor-not-allowed border-b-4 border-slate-900 transition-all flex items-center justify-center space-x-2 text-xs sm:text-sm">
+                        <span>Lanjut Soal Berikutnya</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final Victory Result Screen -->
+        <section id="result-section" class="hidden w-full max-w-2xl mx-auto text-center z-10">
+            <div class="glass-card rounded-3xl p-5 sm:p-9 relative overflow-hidden">
+                <div class="inline-block bg-amber-400 p-4 rounded-full border-4 border-amber-600 mb-2 animate-bounce">
+                    <i class="fa-solid fa-trophy text-4xl text-slate-950"></i>
+                </div>
+
+                <h2 class="text-xl sm:text-3xl font-black text-amber-300 mb-1">PUNCAK GUNUNG BOHONG DITAKLUKKAN!</h2>
+                <p class="text-slate-300 text-xs sm:text-sm mb-5">Alya dan kamu berhasil menuntaskan seluruh 60 narasi tantangan sengit Kota Cimahi!</p>
+
+                <div class="bg-slate-900/90 border-4 border-dashed border-amber-400 p-4 sm:p-6 rounded-2xl mb-5 text-left space-y-3 shadow-inner relative">
+                    <div class="text-center border-b-2 border-slate-800 pb-3">
+                        <span class="text-[10px] sm:text-xs font-bold text-amber-400 uppercase tracking-widest">Sertifikat Kelulusan Pahlawan Jerami</span>
+                        <h3 id="res-student-name" class="text-lg sm:text-2xl font-black text-amber-200">Nama Siswa</h3>
+                        <p id="res-student-meta" class="text-xs text-slate-400 font-bold">Kelas: VII-A | No. Absen: 12</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-center py-1">
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-amber-500/40">
+                            <span class="text-[10px] sm:text-xs text-slate-400 font-bold block">Total Skor Akhir</span>
+                            <span id="res-total-score" class="text-xl sm:text-3xl font-black text-emerald-400">240</span>
+                            <span class="text-[10px] text-slate-500 block">/ 240 Poin</span>
+                        </div>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-amber-500/40">
+                            <span class="text-[10px] sm:text-xs text-slate-400 font-bold block">Gelar Pejuang</span>
+                            <span id="res-predicate" class="text-xs sm:text-base font-extrabold text-amber-300">Pahlawan Utama</span>
+                        </div>
+                    </div>
+
+                    <p id="res-evaluation-text" class="text-xs text-slate-300 text-center italic bg-slate-950/60 p-2 rounded-xl border border-slate-800">
+                        Luar biasa! Analisis narasi fantasi literasi dan numerasimu sangat hebat!
+                    </p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2.5 justify-center">
+                    <button onclick="restartGame()" class="bg-sky-600 hover:bg-sky-700 text-white font-extrabold px-5 py-2.5 rounded-2xl border-b-4 border-sky-900 shadow-lg active:translate-y-0.5 flex items-center justify-center space-x-2 text-xs sm:text-sm">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span>Main Ulang</span>
+                    </button>
+                    <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-5 py-2.5 rounded-2xl border-b-4 border-emerald-900 shadow-lg active:translate-y-0.5 flex items-center justify-center space-x-2 text-xs sm:text-sm">
+                        <i class="fa-solid fa-print"></i>
+                        <span>Cetak Hasil</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-950 text-slate-400 text-center py-2.5 text-[11px] border-t-2 border-slate-800 z-20">
+        <p>GAME JERAMI &copy; Jelajah Histori Cimahi - Fast 145 BPM Battle Edition (Kelas VII)</p>
+    </footer>
+
+    <script>
+        const gameLocations = [
+            {
+                id: 1,
+                name: "Stasiun Cimahi",
+                icon: "fa-train-subway",
+                history: "Stasiun Cimahi dibuka pada tahun 1884 oleh perusahaan kereta api Staatsspoorwegen (SS). Stasiun ini menjadi pengangkut vital militer Belanda dan komoditas perkebunan menuju Bandung dan Batavia.",
+                mission: "Misi Alya: Selesaikan 10 Soal Tantangan Kereta Uap Portal Waktu!"
+            },
+            {
+                id: 2,
+                name: "RS Dustira",
+                icon: "fa-hospital",
+                history: "Didirikan tahun 1887 sebagai Militaire Hospital. Pada tahun 1956 diubah menjadi RS Dustira untuk menghormati Major Dr. Dustira Sastroamidjojo, dokter pahlawan pejuang Kemerdekaan Indonesia.",
+                mission: "Misi Alya: Selesaikan 10 Soal Tantangan Medis Waktu Pahlawan!"
+            },
+            {
+                id: 3,
+                name: "The Historich",
+                icon: "fa-landmark-flag",
+                history: "Gedung neoklasik ini dibangun tahun 1895 dengan nama Societeit Concordia sebagai tempat rekreasi perwira militer. Kini dikenal sebagai The Historich.",
+                mission: "Misi Alya: Selesaikan 10 Soal Tantangan Prasasti Neoklasik!"
+            },
+            {
+                id: 4,
+                name: "Penjara Poncol",
+                icon: "fa-building-shield",
+                history: "Dikenal sebagai Militair Huis van Bewaring, benteng tahanan militer ini dibangun awal abad ke-20 dengan arsitektur tembok yang sangat kokoh.",
+                mission: "Misi Alya: Selesaikan 10 Soal Tantangan Kode Benteng Poncol!"
+            },
+            {
+                id: 5,
+                name: "Gereja Santo Ignatius",
+                icon: "fa-church",
+                history: "Gereja Katolik Santo Ignatius Cimahi berdiri sejak tahun 1906. Bangunannya mengusung arsitektur kolonial yang anggun dengan jendela kaca patri berukir indah.",
+                mission: "Misi Alya: Selesaikan 10 Soal Tantangan Geometri Kaca Patri!"
+            },
+            {
+                id: 6,
+                name: "Kampung Cirendeu",
+                icon: "fa-wheat-awn",
+                history: "Kampung Adat Cirendeu terkenal karena masyarakatnya konsisten mengonsumsi Rasi (Beras Singkong) sejak tahun 1924 sebagai simbol kemandirian pangan.",
+                mission: "Misi Alya: Selesaikan 10 Soal Tantangan Ketahanan Pangan Rasi Ajaib!"
+            },
+            {
+                id: 7,
+                name: "Puncak Gunung Bohong",
+                icon: "fa-mountain-sun",
+                history: "Gunung Bohong adalah bukit unik di Cimahi. Dinamakan 'Bohong' karena tampak besar menyerupai gunung dari kejauhan, padahal merupakan bukit.",
+                mission: "Puncak Kemenangan Penjelajahan Alya!"
+            }
+        ];
+
+        const generateAll60QuestionsWithTwoParagraphs = () => {
+            const list = [];
+
+            gameLocations.slice(0, 6).forEach((loc, lIdx) => {
+                for (let i = 1; i <= 10; i++) {
+                    const isPG = i % 2 !== 0;
+
+                    let p1 = "";
+                    let p2 = "";
+                    let qText = "";
+                    let opts = undefined;
+                    let correctAns = null;
+                    let expText = "";
+
+                    if (lIdx === 0) { // Stasiun Cimahi
+                        p1 = `Dalam kabut tebal pagi hari di Stasiun Cimahi abad ke-19, Alya memegang Kristal Cakra Waktu yang bergetar hebat. Di hadapannya, gerbong kereta uap raksasa berwarna keemasan buatan Staatsspoorwegen tahun 1884 meluncur tanpa suara dari dalam portal dimensi gaib. Cerobong asap kereta mengeluarkan pendaran angka-angka bercahaya yang memantulkan bayangan para prajurit dan pedagang zaman dahulu.`;
+                        p2 = `Seorang masinis tua berwujud penjaga sejarah mendekati Alya dan menyerahkan sebuah gulungan perkamen bertuliskan tinta perak. "Wahai penjelajah muda, Stasiun Cimahi dibuka pertama kali pada tahun 1884 bukan sekadar untuk mengangkut penumpang biasa, melainkan sebagai jalur urat nadi transportasi militer Belanda serta pengangkut hasil bumi seperti teh dan kopi dari pedalaman tanah Priangan menuju Batavia," ujar sang masinis dengan suara berwibawa.`;
+
+                        if (i === 1) {
+                            qText = "Berdasarkan naskah narasi fantasi dua paragraf di atas, apakah tujuan utama pembukaan Stasiun Cimahi pada tahun 1884?";
+                            opts = ["A. Pusat hiburan pacuan kuda dan arena gokart", "B. Jalur transportasi militer Belanda dan pengangkut hasil bumi Priangan", "C. Tempat pembuatan pesawat terbang dan kapal laut", "D. Stasiun kereta gantung khusus wisatawan modern"];
+                            correctAns = 1;
+                            expText = "Sesuai paragraf kedua, Stasiun Cimahi dibentuk tahun 1884 sebagai sarana transportasi militer dan pengangkut hasil bumi Priangan.";
+                        } else if (i === 2) {
+                            p2 = `Kereta uap portal waktu dijadwalkan berangkat melintasi ruang dimensi dari Stasiun Cimahi menuju Bandung pada pukul 07.15 WIB. Karena ada gumpalan awan mistis yang menghalangi laju rel ajaib, perjalanan kereta membutuhkan waktu tepat 50 menit. Pukul berapakah kereta uap ajaib tersebut akan mendarat di Stasiun Bandung?`;
+                            qText = "Tuliskan waktu kedatangan kereta uap ajaib! (Contoh format: 08.05)";
+                            correctAns = "08.05";
+                            expText = "07.15 + 50 menit = Pukul 08.05 WIB.";
+                        } else {
+                            qText = isPG ? "Nilai utama yang diajarkan dalam petualangan Alya di pos Stasiun Cimahi adalah..." : `Jika satu gerbong membawa ${i * 5} peti hasil bumi, berapa peti yang dibawa dalam 4 gerbong identik?`;
+                            opts = isPG ? ["A. Menghargai dan menjaga warisan peninggalan bersejarah", "B. Merusak bangunan kuno yang sudah tua", "C. Acuh terhadap fakta sejarah daerah", "D. Membiarkan bangunan bersejarah terbengkalai"] : undefined;
+                            correctAns = isPG ? 0 : (i * 20).toString();
+                            expText = isPG ? "Menjaga warisan sejarah merupakan bentuk apresiasi terhadap peradaban bangsa." : `${i * 5} x 4 = ${i * 20} peti.`;
+                        }
+                    } else if (lIdx === 1) { // RS Dustira
+                        p1 = `Langkah kaki Alya bergema di sepanjang koridor Rumah Sakit Dustira yang diselimuti aura cahaya biru penyembuh. Dinding-dinding tua bangunan yang berdiri sejak 1887 dengan nama Militaire Hospital ini memancarkan kilau energi magis. Di setiap sudut ruangan, terekam bayangan perjuangan para tenaga medis zaman dahulu yang merawat prajurit terluka tanpa kenal lelah.`;
+                        p2 = `Pada tahun 1956, nama rumah sakit ini secara resmi diubah menjadi RS Dustira untuk mengabadikan nama heroik Major Dr. Dustira Sastroamidjojo. Beliau adalah sosok dokter pejuang yang rela mengorbankan jiwa raga di medan pertempuran demi menyelamatkan nyawa para pejuang Kemerdekaan Republik Indonesia di wilayah Jawa Barat.`;
+
+                        if (i === 1) {
+                            qText = "Mengapa nama Militaire Hospital diubah secara resmi menjadi Rumah Sakit Dustira pada tahun 1956?";
+                            opts = ["A. Karena disumbangkan oleh bangsawan Kerajaan Belanda", "B. Untuk mengabadikan jasa dan pengorbanan heroik Major Dr. Dustira Sastroamidjojo", "C. Karena merupakan nama gubernur pertama Jawa Barat", "D. Sebagai syarat pembangunan gedung rumah sakit modern"];
+                            correctAns = 1;
+                            expText = "Nama RS Dustira diabadikan pada 1956 untuk mengenang jasa dokter pejuang Major Dr. Dustira Sastroamidjojo.";
+                        } else if (i === 2) {
+                            p2 = `Alya diminta membantu tabib istana menyusun 180 botol ramuan penyembuh ajaib. Ramuan obat tersebut dimasukkan secara merata ke dalam 6 peti kayu medis kuno. Berapakah jumlah botol ramuan ajaib yang terdapat di dalam setiap peti kayu?`;
+                            qText = "Tuliskan angka jumlah botol per peti!";
+                            correctAns = "30";
+                            expText = "180 ÷ 6 = 30 botol per peti.";
+                        } else {
+                            qText = isPG ? "Sifat kepahlawanan apakah yang ditunjukkan Major Dr. Dustira Sastroamidjojo?" : `Jika seorang pasien membutuhkan ${i * 12} ml ramuan penawar dan baru meminum ${i * 4} ml, berapakah sisa ml ramuan yang harus diminum?`;
+                            opts = isPG ? ["A. Rela berkorban dan berjiwa Kemanusiaan tinggi", "B. Mementingkan keuntungan pribadi", "C. Penakut dan mudah menyerah", "D. Tidak peduli terhadap penderitaan sesama"] : undefined;
+                            correctAns = isPG ? 0 : (i * 8).toString();
+                            expText = isPG ? "Major Dr. Dustira dicatat memiliki jiwa rela berkorban dan kemanusiaan tinggi." : `${i * 12} - ${i * 4} = ${i * 8} ml.`;
+                        }
+                    } else if (lIdx === 2) { // The Historich
+                        p1 = `Di tengah alunan musik klasik yang bergema dari masa lalu, Alya memasuki pelataran gedung The Historich yang berdiri anggun. Gedung bersejarah berarsitektur neoklasik Eropa ini dibangun pertama kali pada tahun 1895 dengan nama awal Societeit Concordia. Pilar-pilar putih tinggi menjulang menyangga atap megah, memancarkan pesona kejayaan masa lampau.`;
+                        p2 = `Dahulu kala, gedung ini menjadi pusat pertemuan, dansa, dan hiburan sosial bagi para perwira tinggi serta bangsawan. Kini, prasasti ukiran dinding gedung menyimpan rahasia alfabet kuno yang harus dipecahkan oleh Alya untuk mendapatkan petunjuk arah menuju rute selanjutnya.`;
+
+                        if (i === 1) {
+                            qText = "Apakah nama awal gedung bersejarah The Historich saat pertama kali dibangun pada tahun 1895?";
+                            opts = ["A. Societeit Concordia", "B. Gedung Merdeka Bandung", "C. Benteng Vredeburg", "D. Balai Kota Cimahi"];
+                            correctAns = 0;
+                            expText = "The Historich awalnya bernama Societeit Concordia saat didirikan pada tahun 1895.";
+                        } else if (i === 2) {
+                            p2 = `Gedung The Historich dibangun pada tahun 1895, sedangkan Stasiun Cimahi didirikan pada tahun 1884. Berapakah selisih tahun pembangunan antara kedua bangunan bersejarah Kota Cimahi tersebut?`;
+                            qText = "Tuliskan angka selisih tahunnya!";
+                            correctAns = "11";
+                            expText = "1895 - 1884 = 11 tahun.";
+                        } else {
+                            qText = isPG ? "Gaya arsitektur bangunan gedung The Historich dinamakan gaya..." : `Terdapat ${i * 6} lampu kristal gantung. Jika ${i * 2} lampu padam, berapa lampu kristal yang menyala terang?`;
+                            opts = isPG ? ["A. Neoklasik Eropa", "B. Gothic Tradisional", "C. Minimalis Modern", "D. Rumah Gadang"] : undefined;
+                            correctAns = isPG ? 0 : (i * 4).toString();
+                            expText = isPG ? "The Historich mengusung arsitektur Neoklasik Eropa." : `${i * 6} - ${i * 2} = ${i * 4} lampu.`;
+                        }
+                    } else if (lIdx === 3) { // Penjara Poncol
+                        p1 = `Alya berdiri di hadapan benteng kokoh berkawat besi yang dikenal sebagai Penjara Poncol atau Militair Huis van Bewaring. Tembok-tembok bata tebal berwarna kelabu menjulang tinggi memagari kompleks tahanan militer yang dibangun pada awal abad ke-20. Angin dingin berhembus membawa pesan rahasia tentang pentingnya aturan dan kedisiplinan.`;
+                        p2 = `Para penjaga gerbang benteng memakai baju zirah perak dan memegang gembok angka gaib. Penjara ini dahulu difungsikan khusus sebagai rumah tahanan disiplin bagi tentara militer. Untuk membuka gerbang rahasia Poncol, Alya harus mengoperasikan kalkulasi angka pada papan pilar batu penjara.`;
+
+                        if (i === 1) {
+                            qText = "Apakah fungsi utama pembangunan Penjara Poncol (Militair Huis van Bewaring) berdasarkan narasi?";
+                            opts = ["A. Tempat penahanan kedisiplinan militer", "B. Gudang penyimpanan bahan makanan rakyat", "C. Asrama tempat tinggal para siswa sekolah", "D. Taman bermain anak-anak"];
+                            correctAns = 0;
+                            expText = "Penjara Poncol difungsikan sebagai rumah tahanan disiplin militer pada masa kolonial.";
+                        } else if (i === 2) {
+                            p2 = `Dinding benteng Penjara Poncol memiliki ketebalan 80 cm. Jika Alya menyusun 5 lapis tembok bata gaib berseri, berapakah total ketebalan seluruh tembok tersebut dalam satuan meter?`;
+                            qText = "Tuliskan angka hasil dalam meter! (Contoh: 4)";
+                            correctAns = "4";
+                            expText = "80 cm x 5 = 400 cm = 4 meter.";
+                        } else {
+                            qText = isPG ? "Sikap disiplin yang dapat kita terapkan sebagai siswa kelas VII di sekolah adalah..." : `Terdapat ${i * 8} buah kunci gembok besi. Jika Alya sudah mencoba ${i * 3} kunci, berapakah sisa kunci yang belum dicoba?`;
+                            opts = isPG ? ["A. Datang tepat waktu dan mematuhi aturan sekolah", "B. Terlambat masuk kelas dan membuang sampah sembarangan", "C. Menyontek saat ulangan berlangsung", "D. Mengabaikan nasihat dan arahan guru"] : undefined;
+                            correctAns = isPG ? 0 : (i * 5).toString();
+                            expText = isPG ? "Menerapkan disiplin waktu dan mematuhi aturan adalah cerminan karakter terdidik." : `${i * 8} - ${i * 3} = ${i * 5} kunci.`;
+                        }
+                    } else if (lIdx === 4) { // Gereja Santo Ignatius
+                        p1 = `Suasana hening dan damai menyelimuti Alya saat melangkah memasuki kawasan Gereja Santo Ignatius Cimahi yang didirikan pada tahun 1906. Cahaya matahari pagi menembus kaca patri berwarna-warni di dinding gereja, menciptakan pantulan prisma keemasan yang indah di atas lantai ruang ibadah.`;
+                        p2 = `Bangunan bersejarah berarsitektur kolonial ini menjadi simbol toleransi dan keharmonisan antarumat beragama di Kota Cimahi sejak lebih dari satu abad yang lalu. Alya melihat susunan pecahan kaca patri berbentuk pola geometris matematik yang memuat sandi angka untuk melangkah ke lokasi berikutnya.`;
+
+                        if (i === 1) {
+                            qText = "Nilai sosial utama yang dicerminkan dari keberadaan bangunan bersejarah Gereja Santo Ignatius adalah...";
+                            opts = ["A. Toleransi dan sikap saling menghormati antarumat beragama", "B. Sikap tertutup terhadap kelompok masyarakat lain", "C. Persaingan dan permusuhan antar warga", "D. Ketidakpedulian terhadap peninggalan seni sejarah"];
+                            correctAns = 0;
+                            expText = "Gereja Santo Ignatius menjadi cerminan nilai toleransi dan keharmonisan beragama.";
+                        } else if (i === 2) {
+                            p2 = `Susunan kaca patri pada jendela gereja membentuk barisan pola aritmatika: Jendela I (5 kaca), Jendela II (10 kaca), Jendela III (15 kaca). Berapakah jumlah pecahan kaca patri pada Jendela IV jika polanya berlanjut secara teratur?`;
+                            qText = "Tuliskan angka jumlah kaca pada Jendela IV!";
+                            correctAns = "20";
+                            expText = "Pola bertambah 5 tiap tingkat: 5, 10, 15, 20 kaca.";
+                        } else {
+                            qText = isPG ? "Tahun berdirinya Gereja Santo Ignatius berdasarkan catatan sejarah adalah..." : `Jika tinggi bingkai jendela kaca patri adalah ${i * 40} cm, berapakah ukurannya dalam satuan meter?`;
+                            opts = isPG ? ["A. 1906", "B. 1945", "C. 1884", "D. 2024"] : undefined;
+                            correctAns = isPG ? 0 : (i * 0.4).toString();
+                            expText = isPG ? "Gereja Santo Ignatius berdiri sejak tahun 1906." : `${i * 40} cm = ${i * 0.4} meter.`;
+                        }
+                    } else if (lIdx === 5) { // Kampung Cirendeu
+                        p1 = `Alya menginjakkan kaki di Kampung Adat Cirendeu yang asri di lereng bukit. Bau harum aroma olahan singkong menyambut kedatangannya. Sejak tahun 1924, masyarakat adat Cirendeu secara konsisten mengonsumsi Rasi (Beras Singkong) sebagai makanan pokok sehari-hari pengganti beras padi sebagai bentuk kemandirian dan kearifan lokal.`;
+                        p2 = `Tetua adat memberikan Alya kantung bekal Rasi Ajaib yang memancarkan pendaran energi kekuatan fisik. Makanan Rasi ini akan menjadi perbekalan energi vital bagi Alya untuk menempuh pendakian rintangan terakhir menuju Puncak Gunung Bohong.`;
+
+                        if (i === 1) {
+                            qText = "Apakah nama makanan pokok unik masyarakat Kampung Adat Cirendeu sejak tahun 1924?";
+                            opts = ["A. Rasi (Beras Singkong)", "B. Sagu Papeda", "C. Tiwol Jagung", "D. Roti Gandum"];
+                            correctAns = 0;
+                            expText = "Masyarakat Kampung Adat Cirendeu mengonsumsi Rasi (Beras Singkong) sejak tahun 1924.";
+                        } else if (i === 2) {
+                            p2 = `Alya membawa perbekalan 6 kg Rasi Ajaib untuk pendakian. Jika 1 kg Rasi dapat dikonsumsi untuk 5 porsi makan pendaki, berapa total porsi makan yang diperoleh Alya dari seluruh perbekalan tersebut?`;
+                            qText = "Tuliskan angka total porsi makan!";
+                            correctAns = "30";
+                            expText = "6 kg x 5 porsi = 30 porsi makan.";
+                        } else {
+                            qText = isPG ? "Pelajaran utama dari tradisi pangan Kampung Adat Cirendeu adalah..." : `Tradisi Rasi dimulai tahun 1924. Berapa tahunkah tradisi kemandirian pangan tersebut berlangsung hingga tahun 2024?`;
+                            opts = isPG ? ["A. Kemandirian dan pemanfaatan potensi pangan lokal", "B. Bergantung pada beras impor dari luar negeri", "C. Merusak kelestarian alam dan tanaman", "D. Menolak berkembangnya ilmu pengetahuan"] : undefined;
+                            correctAns = isPG ? 0 : "100";
+                            expText = isPG ? "Cirendeu mengajarkan kemandirian memanfaatkan potensi pangan lokal." : "2024 - 1924 = 100 tahun.";
+                        }
+                    }
+
+                    list.push({
+                        locationId: lIdx + 1,
+                        type: isPG ? "Pilihan Ganda" : "Isian Singkat",
+                        category: isPG ? "Literasi Fantasi" : "Numerasi Fantasi",
+                        paragraph1: p1,
+                        paragraph2: p2,
+                        question: qText,
+                        options: opts,
+                        correctAnswer: correctAns,
+                        explanation: expText
+                    });
+                }
+            });
+
+            return list;
+        };
+
+        const quizQuestions = generateAll60QuestionsWithTwoParagraphs();
+
+        let playerData = { nama: "", kelas: "", absen: "", score: 0 };
+        let currentQuestionIndex = 0;
+        let currentLocationIndex = 0;
+        let timerInterval = null;
+        let timeLeft = 60;
+
+        let audioCtx = null;
+        let isMuted = false;
+        let isBGMPlaying = false;
+        let bgmInterval = null;
+        let currentStep = 0;
+
+        // G Minor Action RPG scale frequencies
+        const noteFreqs = {
+            'G2': 98.00, 'A2': 110.00, 'A#2': 116.54, 'C3': 130.81, 'D3': 146.83, 'D#3': 155.56, 'F#3': 185.00,
+            'G3': 196.00, 'A3': 220.00, 'A#3': 233.08, 'C4': 261.63, 'D4': 293.66, 'D#4': 311.13, 'F#4': 369.99,
+            'G4': 392.00, 'A4': 440.00, 'A#4': 466.16, 'C5': 523.25, 'D5': 587.33, 'D#5': 622.25, 'F#5': 739.99, 'G5': 783.99
+        };
+
+        // 145 BPM Intense Action Chiptune Sequence (G Minor / D Harmonic)
+        const intense145BPMSequence = [
+            { lead: 'G4', arp: 'D5', bass: 'G2', drum: 'kick' },
+            { lead: 'A#4', arp: 'G5', bass: 'G2', drum: 'hihat' },
+            { lead: 'D5', arp: 'A#4', bass: 'G2', drum: 'snare' },
+            { lead: 'G5', arp: 'D5', bass: 'G2', drum: 'hihat' },
+            { lead: 'F#5', arp: 'D5', bass: 'D3', drum: 'kick' },
+            { lead: 'D5', arp: 'A3', bass: 'D3', drum: 'hihat' },
+            { lead: 'A4', arp: 'F#4', bass: 'D3', drum: 'snare' },
+            { lead: 'D5', arp: 'A4', bass: 'D3', drum: 'hihat' },
+            { lead: 'D#5', arp: 'C5', bass: 'C3', drum: 'kick' },
+            { lead: 'C5', arp: 'G4', bass: 'C3', drum: 'hihat' },
+            { lead: 'G4', arp: 'D#4', bass: 'C3', drum: 'snare' },
+            { lead: 'C5', arp: 'G4', bass: 'C3', drum: 'hihat' },
+            { lead: 'D5', arp: 'A#4', bass: 'D2', drum: 'kick' },
+            { lead: 'A#4', arp: 'F#4', bass: 'D2', drum: 'hihat' },
+            { lead: 'F#4', arp: 'D4', bass: 'D2', drum: 'snare' },
+            { lead: 'D4', arp: 'A3', bass: 'D2', drum: 'hihat' }
+        ];
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContextClass();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function createNoiseBuffer() {
+            if (!audioCtx) return null;
+            const bufferSize = audioCtx.sampleRate * 0.08;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            return buffer;
+        }
+
+        function playSynthesizedDrum(type) {
+            if (!audioCtx || isMuted) return;
+            const now = audioCtx.currentTime;
+
+            if (type === 'hihat') {
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = createNoiseBuffer();
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 8000;
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.04, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                noise.start(now);
+            } else if (type === 'snare') {
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = createNoiseBuffer();
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+                noise.connect(gain);
+                gain.connect(audioCtx.destination);
+                noise.start(now);
+            } else if (type === 'kick') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(35, now + 0.07);
+                gain.gain.setValueAtTime(0.14, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.07);
+            }
+        }
+
+        function playBGMStep() {
+            if (!audioCtx || isMuted || !isBGMPlaying) return;
+
+            const now = audioCtx.currentTime;
+            const stepData = intense145BPMSequence[currentStep % intense145BPMSequence.length];
+
+            // Fast Lead synth
+            if (stepData.lead && noteFreqs[stepData.lead]) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(noteFreqs[stepData.lead], now);
+                gain.gain.setValueAtTime(0.035, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.09);
+            }
+
+            // Rapid Arpeggio synth
+            if (stepData.arp && noteFreqs[stepData.arp]) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(noteFreqs[stepData.arp], now);
+                gain.gain.setValueAtTime(0.02, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.07);
+            }
+
+            // Punchy Bass synth
+            if (stepData.bass && noteFreqs[stepData.bass]) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(noteFreqs[stepData.bass], now);
+                gain.gain.setValueAtTime(0.04, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            }
+
+            if (stepData.drum) playSynthesizedDrum(stepData.drum);
+            currentStep++;
+        }
+
+        function startBGM() {
+            initAudioContext();
+            if (isBGMPlaying) return;
+            isBGMPlaying = true;
+            document.getElementById('bgm-note-indicator').classList.remove('hidden');
+            document.getElementById('bgm-status-text').innerText = "145 BPM BATTLE";
+            // 145 BPM 1/16th step interval: (60 / 145) / 4 = 0.1034s = ~103ms
+            bgmInterval = setInterval(playBGMStep, 103);
+        }
+
+        function stopBGM() {
+            isBGMPlaying = false;
+            if (bgmInterval) {
+                clearInterval(bgmInterval);
+                bgmInterval = null;
+            }
+            document.getElementById('bgm-note-indicator').classList.add('hidden');
+            document.getElementById('bgm-status-text').innerText = "MUTED";
+        }
+
+        function toggleBGM() {
+            initAudioContext();
+            isMuted = !isMuted;
+            const bgmIcon = document.getElementById('bgm-icon');
+
+            if (isMuted) {
+                bgmIcon.className = 'fa-solid fa-volume-xmark text-red-300';
+                stopBGM();
+            } else {
+                bgmIcon.className = 'fa-solid fa-volume-high text-amber-300';
+                startBGM();
+                playSFX('click');
+            }
+        }
+
+        function playSFX(type) {
+            if (isMuted) return;
+            initAudioContext();
+            const now = audioCtx.currentTime;
+
+            try {
+                if (type === 'correct') {
+                    // Heroic Triumphant Major Fanfare
+                    [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+                        gain.gain.setValueAtTime(0.25, now + idx * 0.06);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.25);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.06);
+                        osc.stop(now + idx * 0.06 + 0.25);
+                    });
+                } else if (type === 'wrong') {
+                    // Heavy Alarm Buzzer / Explosion Sound
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(280, now);
+                    osc.frequency.exponentialRampToValueAtTime(60, now + 0.35);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'click') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'warn') {
+                    // Intense Alarm Siren Beep
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(950, now);
+                    osc.frequency.setValueAtTime(1200, now + 0.04);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'move') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(750, now + 0.12);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                }
+            } catch(e) {}
+        }
+
+        function submitStudentIdentity(e) {
+            e.preventDefault();
+            playSFX('click');
+
+            playerData.nama = document.getElementById('input-nama').value.trim();
+            playerData.kelas = document.getElementById('input-kelas').value;
+            playerData.absen = document.getElementById('input-absen').value;
+            playerData.score = 0;
+
+            document.getElementById('player-display-name').innerText = playerData.nama;
+            document.getElementById('score-display').innerText = "0";
+
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('game-status-bar').classList.remove('hidden');
+            document.getElementById('map-section').classList.remove('hidden');
+
+            startBGM();
+            renderInteractiveMap();
+            moveAlyaAvatarToLocation(0);
+        }
+
+        function renderInteractiveMap() {
+            const container = document.getElementById('map-nodes-container');
+            container.innerHTML = '';
+
+            gameLocations.forEach((loc, idx) => {
+                const isPassed = idx < currentLocationIndex;
+                const isCurrent = idx === currentLocationIndex;
+                
+                let nodeStyle = 'bg-slate-800 border-slate-600 text-slate-500';
+                if (isPassed) nodeStyle = 'bg-emerald-500 border-emerald-400 text-slate-950 cursor-pointer';
+                if (isCurrent) nodeStyle = 'bg-gradient-to-tr from-amber-400 to-red-500 border-amber-300 text-slate-950 map-node active-node cursor-pointer';
+
+                const nodeHTML = `
+                    <div id="node-element-${idx}" onclick="clickMapNode(${idx})" class="flex flex-col items-center group transition-all">
+                        <div class="w-10 h-10 sm:w-16 sm:h-16 rounded-2xl border-2 sm:border-4 ${nodeStyle} flex items-center justify-center shadow-xl relative">
+                            <i class="fa-solid ${loc.icon} text-base sm:text-2xl"></i>
+                            <span class="absolute -bottom-1.5 -right-1.5 bg-slate-950 text-amber-300 border border-amber-500 text-[9px] sm:text-[10px] w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-black">
+                                ${idx + 1}
+                            </span>
+                        </div>
+                        <span class="text-[9px] sm:text-xs font-black mt-1 text-amber-200 bg-slate-950/90 px-1.5 py-0.5 rounded shadow border border-amber-500/40 text-center max-w-[90px] sm:max-w-[110px] truncate">
+                            ${loc.name}
+                        </span>
+                    </div>
+                `;
+                container.innerHTML += nodeHTML;
+            });
+        }
+
+        function moveAlyaAvatarToLocation(locIdx) {
+            const avatar = document.getElementById('alya-avatar');
+            const targetNode = document.getElementById(`node-element-${locIdx}`);
+            
+            if (targetNode) {
+                playSFX('move');
+                const nodeRect = targetNode.getBoundingClientRect();
+                const parentRect = document.getElementById('map-canvas-area').getBoundingClientRect();
+
+                const x = nodeRect.left - parentRect.left + (nodeRect.width / 2);
+                const y = nodeRect.top - parentRect.top;
+
+                avatar.style.left = `${x}px`;
+                avatar.style.top = `${y}px`;
+            }
+        }
+
+        function clickMapNode(idx) {
+            if (idx <= currentLocationIndex) {
+                playSFX('click');
+                showHistoryModal(idx);
+            }
+        }
+
+        function triggerCurrentLocationModal() {
+            clickMapNode(currentLocationIndex);
+        }
+
+        function showHistoryModal(locIdx) {
+            const loc = gameLocations[locIdx];
+            document.getElementById('modal-level-badge').innerText = `Pos ${loc.id} dari ${gameLocations.length - 1}`;
+            document.getElementById('modal-loc-icon').className = `fa-solid ${loc.icon}`;
+            document.getElementById('modal-loc-title').innerText = loc.name;
+            document.getElementById('modal-loc-history').innerText = loc.history;
+            document.getElementById('modal-loc-mission').innerHTML = `<strong>${loc.mission}</strong>`;
+
+            document.getElementById('history-modal').classList.remove('hidden');
+        }
+
+        function closeHistoryModal() {
+            playSFX('click');
+            document.getElementById('history-modal').classList.add('hidden');
+        }
+
+        function startQuizForCurrentLocation() {
+            playSFX('click');
+            document.getElementById('history-modal').classList.add('hidden');
+            document.getElementById('map-section').classList.add('hidden');
+            document.getElementById('quiz-section').classList.remove('hidden');
+
+            loadQuestion(currentQuestionIndex);
+        }
+
+        function loadQuestion(qIdx) {
+            const q = quizQuestions[qIdx];
+            const locNum = q.locationId;
+            const subQNum = ((qIdx) % 10) + 1;
+            
+            document.getElementById('quiz-badge').innerText = `Pos ${locNum} - Soal ${subQNum}/10`;
+            document.getElementById('quiz-type-badge').innerText = `${q.category} (${q.type})`;
+            
+            // Inject two distinct paragraphs into narrative container
+            document.getElementById('quiz-narrative').innerHTML = `
+                <p class="mb-2 leading-relaxed text-xs sm:text-sm">${q.paragraph1}</p>
+                <p class="leading-relaxed text-xs sm:text-sm">${q.paragraph2}</p>
+            `;
+            document.getElementById('quiz-question').innerText = q.question;
+
+            document.getElementById('explanation-box').classList.add('hidden');
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.disabled = true;
+            nextBtn.className = "w-full sm:w-auto bg-slate-800 text-slate-500 font-extrabold px-5 py-2.5 rounded-2xl cursor-not-allowed border-b-4 border-slate-900 transition-all flex items-center justify-center space-x-2 text-xs sm:text-sm";
+
+            const answersContainer = document.getElementById('answers-container');
+            answersContainer.innerHTML = '';
+
+            if (q.type === "Pilihan Ganda") {
+                q.options.forEach((opt, optIdx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-3 sm:p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-900 hover:border-amber-400 hover:bg-slate-800 font-bold text-amber-100 transition-all text-xs sm:text-sm flex items-center justify-between group";
+                    btn.onclick = () => submitMultipleChoiceAnswer(optIdx, btn);
+                    btn.innerHTML = `
+                        <span>${opt}</span>
+                        <i class="fa-regular fa-circle text-slate-500 group-hover:text-amber-400 text-sm"></i>
+                    `;
+                    answersContainer.appendChild(btn);
+                });
+            } else {
+                answersContainer.innerHTML = `
+                    <div class="space-y-2.5">
+                        <input type="text" id="short-answer-input" placeholder="Ketik jawaban singkat..." 
+                            class="w-full p-3 sm:p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-900 focus:border-amber-400 focus:outline-none font-bold text-amber-100 text-xs sm:text-sm">
+                        <button onclick="submitShortInputAnswer()" class="w-full bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 text-slate-950 font-black py-2.5 rounded-2xl border-b-4 border-red-950 active:translate-y-0.5 text-xs sm:text-sm">
+                            KIRIM JAWABAN
+                        </button>
+                    </div>
+                `;
+            }
+
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 60;
+            const timerBox = document.getElementById('timer-box');
+            timerBox.className = "flex items-center space-x-1.5 bg-red-950 border-2 border-red-500 px-3 py-1 rounded-xl transition-all";
+            document.getElementById('timer-text').innerText = timeLeft;
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer-text').innerText = timeLeft;
+
+                if (timeLeft <= 10 && timeLeft > 0) {
+                    playSFX('warn');
+                    timerBox.className = "flex items-center space-x-1.5 px-3 py-1 rounded-xl border-2 timer-warning-glow transition-all";
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        function handleTimeout() {
+            playSFX('wrong');
+            disableInputs();
+            showExplanation(false, "WAKTU HABIS!", "Waktu 60 detik telah habis. Jawaban tidak mendapatkan skor.");
+            enableNextButton();
+        }
+
+        function submitMultipleChoiceAnswer(selectedIndex, selectedBtn) {
+            clearInterval(timerInterval);
+            const q = quizQuestions[currentQuestionIndex];
+            disableInputs();
+
+            const isCorrect = selectedIndex === q.correctAnswer;
+
+            if (isCorrect) {
+                playSFX('correct');
+                playerData.score += 4;
+                document.getElementById('score-display').innerText = playerData.score;
+                selectedBtn.className = "w-full text-left p-3 sm:p-3.5 rounded-2xl border-2 border-emerald-400 bg-emerald-950 font-bold text-emerald-200 transition-all text-xs sm:text-sm flex items-center justify-between";
+                showExplanation(true, "JAWABAN BENAR! (+4 POIN)", q.explanation);
+            } else {
+                playSFX('wrong');
+                selectedBtn.className = "w-full text-left p-3 sm:p-3.5 rounded-2xl border-2 border-red-500 bg-red-950 font-bold text-red-200 transition-all text-xs sm:text-sm flex items-center justify-between";
+                showExplanation(false, "JAWABAN KURANG TEPAT", q.explanation);
+            }
+
+            enableNextButton();
+        }
+
+        function submitShortInputAnswer() {
+            const input = document.getElementById('short-answer-input');
+            if (!input || !input.value.trim()) return;
+
+            clearInterval(timerInterval);
+            const userAns = input.value.trim().toLowerCase();
+            const q = quizQuestions[currentQuestionIndex];
+            const targetAns = q.correctAnswer.toString().toLowerCase();
+
+            disableInputs();
+
+            const isCorrect = userAns === targetAns;
+
+            if (isCorrect) {
+                playSFX('correct');
+                playerData.score += 4;
+                document.getElementById('score-display').innerText = playerData.score;
+                input.className = "w-full p-3 sm:p-3.5 rounded-2xl border-2 border-emerald-400 bg-emerald-950 font-bold text-emerald-200 text-xs sm:text-sm";
+                showExplanation(true, "JAWABAN BENAR! (+4 POIN)", q.explanation);
+            } else {
+                playSFX('wrong');
+                input.className = "w-full p-3 sm:p-3.5 rounded-2xl border-2 border-red-500 bg-red-950 font-bold text-red-200 text-xs sm:text-sm";
+                showExplanation(false, "JAWABAN KURANG TEPAT", `Jawaban tepat: "${q.correctAnswer}". ${q.explanation}`);
+            }
+
+            enableNextButton();
+        }
+
+        function disableInputs() {
+            const container = document.getElementById('answers-container');
+            const elements = container.querySelectorAll('button, input');
+            elements.forEach(el => el.disabled = true);
+        }
+
+        function showExplanation(isCorrect, title, text) {
+            const expBox = document.getElementById('explanation-box');
+            const expIcon = document.getElementById('exp-icon');
+            const expTitle = document.getElementById('exp-title');
+            const expText = document.getElementById('exp-text');
+
+            expBox.classList.remove('hidden');
+
+            if (isCorrect) {
+                expBox.className = "p-3.5 rounded-2xl mb-4 text-xs sm:text-sm font-semibold border-2 bg-emerald-950 border-emerald-400 text-emerald-200";
+                expIcon.className = "fa-solid fa-circle-check text-emerald-400 text-base sm:text-lg";
+            } else {
+                expBox.className = "p-3.5 rounded-2xl mb-4 text-xs sm:text-sm font-semibold border-2 bg-red-950 border-red-500 text-red-200";
+                expIcon.className = "fa-solid fa-circle-xmark text-red-400 text-base sm:text-lg";
+            }
+
+            expTitle.innerText = title;
+            expText.innerText = text;
+        }
+
+        function enableNextButton() {
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.disabled = false;
+            nextBtn.className = "w-full sm:w-auto bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 text-slate-950 font-black px-5 py-2.5 rounded-2xl border-b-4 border-red-950 shadow-lg active:translate-y-0.5 transition-all flex items-center justify-center space-x-2 cursor-pointer text-xs sm:text-sm";
+        }
+
+        function nextQuestion() {
+            playSFX('click');
+            currentQuestionIndex++;
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                const nextLocId = quizQuestions[currentQuestionIndex].locationId - 1;
+                
+                if (nextLocId > currentLocationIndex) {
+                    currentLocationIndex = nextLocId;
+                    renderInteractiveMap();
+                    moveAlyaAvatarToLocation(currentLocationIndex);
+
+                    document.getElementById('quiz-section').classList.add('hidden');
+                    document.getElementById('map-section').classList.remove('hidden');
+                    
+                    setTimeout(() => {
+                        showHistoryModal(currentLocationIndex);
+                    }, 500);
+                    return;
+                }
+                loadQuestion(currentQuestionIndex);
+            } else {
+                finishGame();
+            }
+        }
+
+        function finishGame() {
+            currentLocationIndex = 6;
+            renderInteractiveMap();
+            moveAlyaAvatarToLocation(6);
+
+            document.getElementById('quiz-section').classList.add('hidden');
+            document.getElementById('map-section').classList.add('hidden');
+            document.getElementById('result-section').classList.remove('hidden');
+
+            document.getElementById('res-student-name').innerText = playerData.nama;
+            document.getElementById('res-student-meta').innerText = `Kelas: ${playerData.kelas} | No. Absen: ${playerData.absen}`;
+            document.getElementById('res-total-score').innerText = playerData.score;
+
+            let predicate = "Pahlawan Pemula";
+            let evalText = "Terus tingkatkan literasi membaca dan latihan soal numerasimu!";
+
+            if (playerData.score >= 200) {
+                predicate = "Pahlawan Utama Sejarah Cimahi";
+                evalText = "Sempurna! Kamu berhasil menguasai seluruh 60 tantangan literasi-numerasi dan sejarah Kota Cimahi!";
+            } else if (playerData.score >= 140) {
+                predicate = "Pejuang Handal";
+                evalText = "Sangat Baik! Pemahamanmu terkait narasi fantasi dan perhitungan numerasi sudah sangat baik!";
+            }
+
+            document.getElementById('res-predicate').innerText = predicate;
+            document.getElementById('res-evaluation-text').innerText = evalText;
+        }
+
+        function restartGame() {
+            playSFX('click');
+            currentQuestionIndex = 0;
+            currentLocationIndex = 0;
+            playerData.score = 0;
+
+            document.getElementById('result-section').classList.add('hidden');
+            document.getElementById('login-section').classList.remove('hidden');
+            document.getElementById('game-status-bar').classList.add('hidden');
+        }
+
+        window.addEventListener('resize', () => {
+            if (!document.getElementById('map-section').classList.contains('hidden')) {
+                moveAlyaAvatarToLocation(currentLocationIndex);
+            }
+        });
+
+        document.addEventListener('click', () => {
+            initAudioContext();
+        }, { once: true });
+    </script>
+</body>
+</html>
